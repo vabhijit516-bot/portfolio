@@ -3,10 +3,9 @@ import path from "path";
 import dotenv from "dotenv";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import * as admin from "firebase-admin";
 import type { ServiceAccount } from "firebase-admin";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { cert, initializeApp } from "firebase-admin/app";
+import { getDatabase } from "firebase-admin/database";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
@@ -27,10 +26,11 @@ const serviceAccount: ServiceAccount = JSON.parse(fs.readFileSync(serviceAccount
 // Initialize Firebase Admin SDK with service account credentials
 initializeApp({
     credential: cert(serviceAccount),
+    databaseURL: process.env.FIREBASE_DATABASE_URL || firebaseConfig.databaseURL || firebaseConfig.databaseUrl,
 });
 
-// Use the admin Firestore instance
-const db = getFirestore();
+// Use the admin Realtime Database instance
+const db = getDatabase();
 
 // Initialize Gemini SDK safely (Lazy client getter)
 function getGeminiClient() {
@@ -46,71 +46,47 @@ function getGeminiClient() {
 // Endpoint 1: Contact Form and Admin Email Compilation
 app.post("/api/contact", async (req, res) => {
     try {
-        const { name, email, description, userAgent, userIp } = req.body;
+        const { name, email, subject, message, description, userAgent, userIp } = req.body;
 
-        if (!name || !email) {
-            return res.status(400).json({ error: "Name and email are required fields" });
+        const senderName = String(name || "").trim();
+        const senderEmail = String(email || "").trim();
+        const senderSubject = String(subject || "Portfolio Contact").trim();
+        const senderMessage = String(message || description || "").trim();
+
+        if (!senderName || !senderEmail || !senderMessage) {
+            return res.status(400).json({ error: "Name, email, and message are required fields" });
         }
 
-        let emailDraft = "No AI draft completed.";
-
-        // Call Gemini API to formulate/draft the email template for vabhijit516@gmail.com
-        try {
-            const ai = getGeminiClient();
-            const prompt = `
-        You are an advanced AI transmission and routing system. 
-        You need to draft a professional, context-aware notification email to the admin: Abhijit (vabhijit516@gmail.com).
-        
-        Details of transmission:
-        - Sender Name: ${name}
-        - Sender Email: ${email}
-        - Message/Description: "${description || 'No description provided'}"
-        
-        Write a highly professional, formatted email draft with a Subject line and clean Message Body. Mention that this message was processed and relayed using the Gemini AI interface dynamically.
-      `;
-
-            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
-            const response = await model.generateContent(prompt);
-
-            if (response && response.response && response.response.text()) {
-                emailDraft = response.response.text();
-            }
-        } catch (aiError: any) {
-            console.error("Gemini API computation failed:", aiError.message);
-            emailDraft = `Fallback system draft: Name: ${name}, Email: ${email}, Message: ${description}. (Gemini API processing was unavailable: ${aiError.message})`;
-        }
-
-        // Save transmission data dynamically into Firestore database
-        const transmissionRef = await db.collection("transmissions").add({
-            name,
-            email,
-            description: description || "",
-            adminEmailDraft: emailDraft,
-            targetAdminMail: "vabhijit516@gmail.com",
-            createdAt: FieldValue.serverTimestamp(),
-        });
-
-        // Also store an explicit log entry (stores user logging/action trace)
-        await db.collection("logs").add({
-            action: "CONTACT_FORM_SUBMISSION",
-            timestamp: FieldValue.serverTimestamp(),
+        const payload = {
+            name: senderName,
+            email: senderEmail,
+            subject: senderSubject,
+            message: senderMessage,
+            timestamp: new Date().toISOString(),
             ip: userIp || "unknown",
             userAgent: userAgent || "unknown",
-            details: `Submitted contact from ${name} (${email}). Transmission document ID: ${transmissionRef.id}. Simulated send to vabhijit516@gmail.com triggered.`,
-        });
+        };
+
+        const contactsRef = db.ref("contactMessages");
+        const newRef = contactsRef.push();
+        await newRef.set(payload);
 
         res.json({
             success: true,
-            message: "secure transmission logs stored dynamically in the Firestore database.",
-            id: transmissionRef.id,
-            emailDraft,
-            recipient: "vabhijit516@gmail.com",
+            message: "Contact details were stored successfully.",
+            id: newRef.key,
+            recipient: "vabi3388@gmail.com",
         });
 
     } catch (error: any) {
         console.error("Transmission transaction failed:", error);
         res.status(500).json({ error: "System failed during initiate transmission workflow", details: error.message });
     }
+});
+
+// Health probe for the contact API
+app.get("/api/contact", (_req, res) => {
+    res.status(200).json({ status: "ok" });
 });
 
 // Endpoint 2: Log User Actions (such as resume downloads or session initialization)
@@ -122,9 +98,11 @@ app.post("/api/logs", async (req, res) => {
             return res.status(400).json({ error: "Action string is required to save logs" });
         }
 
-        const logRef = await db.collection("logs").add({
+        const logsRef = db.ref("logs");
+        const newLogRef = logsRef.push();
+        await newLogRef.set({
             action,
-            timestamp: FieldValue.serverTimestamp(),
+            timestamp: new Date().toISOString(),
             ip: userIp || "unknown",
             userAgent: userAgent || "unknown",
             details: details || "",
@@ -132,8 +110,8 @@ app.post("/api/logs", async (req, res) => {
 
         res.json({
             success: true,
-            logId: logRef.id,
-            message: "Log entry stored dynamically in the Firestore database.",
+            logId: newLogRef.key,
+            message: "Log entry stored dynamically in the Realtime Database.",
         });
 
     } catch (error: any) {
