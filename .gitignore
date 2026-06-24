@@ -1,0 +1,10 @@
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyACo0CwNHtCjw9yQ8-gsbGt7znSHw7rzoc # Replace with your key from the Firebase Console
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=abhijitportfolio-3d187.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://abhijitportfolio-3d187-default-rtdb.firebaseio.com # Optional unless using Realtime Database
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=abhijitportfolio-3d187
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=abhijitportfolio-3d187.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=955196829093
+NEXT_PUBLIC_FIREBASE_APP_ID=1:955196829093:web:612f95cbd8e00fb87d0c4c# Replace with the App ID for the specific Web app you are building
+EMAIL_USER=vabi3388@gmail.com
+EMAIL_PASSWORD=hvtt ltjl cdtj gpsk
+ADMIN_EMAIL=vabhijit516@gmail.com

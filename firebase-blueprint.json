@@ -1,0 +1,74 @@
+{
+    "entities": {
+        "Transmission": {
+            "title": "Transmission",
+            "description": "Stores contact messages and parsed emails to admin",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "adminEmailDraft": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "email",
+                "description",
+                "createdAt"
+            ]
+        },
+        "AccessLog": {
+            "title": "AccessLog",
+            "description": "Logs details of site visitors and actions",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "action": {
+                    "type": "string"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "userAgent": {
+                    "type": "string"
+                },
+                "timestamp": {
+                    "type": "string"
+                },
+                "details": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "action",
+                "timestamp"
+            ]
+        }
+    },
+    "firestore": {
+        "/transmissions/{transmissionId}": {
+            "schema": "Transmission",
+            "description": "Collection of contact form message submissions"
+        },
+        "/logs/{logId}": {
+            "schema": "AccessLog",
+            "description": "Audit trails and activity log data"
+        }
+    }
+}
