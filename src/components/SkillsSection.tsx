@@ -99,7 +99,7 @@ export default function SkillsSection() {
               {TECHNICAL_SKILLS.map((sk, idx) => (
                 <div
                   key={sk.id}
-                  className={`flex items-center gap-2 transition-all duration-300 ${activeSkillIdx >= idx ? "text-emerald-501 font-black translate-x-1" : "text-neutral-400"
+                  className={`flex items-center gap-2 transition-all duration-300 ${activeSkillIdx >= idx ? "text-emerald-600 dark:text-emerald-400 font-black translate-x-1" : "text-neutral-700 dark:text-neutral-200"
                     }`}
                 >
                   <span className={`h-1.5 w-1.5 rounded-full ${activeSkillIdx >= idx ? "bg-emerald-500" : "bg-neutral-300 dark:bg-neutral-700"}`} />
@@ -113,15 +113,15 @@ export default function SkillsSection() {
           {/* Overall Percentage Console readout */}
           <div className="flex justify-between items-end border-t border-neutral-100 dark:border-neutral-850 pt-4">
             <div className="flex flex-col">
-              <span className="text-[9px] font-mono text-neutral-400">TOTAL SCROLLING CHARGE</span>
+              <span className="text-[9px] font-mono text-neutral-600 dark:text-neutral-300">TOTAL SCROLLING CHARGE</span>
               <span className="font-display font-extrabold text-lg text-emerald-500 animate-pulse">
                 {Math.round(scrollProgress * 100)} %
               </span>
             </div>
 
             <div className="flex flex-col items-end">
-              <span className="text-[9px] font-mono text-neutral-400">CAPABILITIES</span>
-              <span className="font-mono text-xs font-bold text-neutral-700 dark:text-neutral-300">
+              <span className="text-[9px] font-mono text-neutral-600 dark:text-neutral-300">CAPABILITIES</span>
+              <span className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-100">
                 {activeSkillIdx + 1} / {TECHNICAL_SKILLS.length} LOADED
               </span>
             </div>
@@ -155,7 +155,7 @@ export default function SkillsSection() {
                       <h4 className="font-display text-base font-extrabold text-neutral-800 dark:text-white">
                         {skill.title}
                       </h4>
-                      <span className="text-[9px] font-mono text-neutral-450 tracking-wider">
+                      <span className="text-[9px] font-mono text-neutral-600 dark:text-neutral-300 tracking-wider">
                         TELEMETRY CLASS NODE // 0{skill.id}
                       </span>
                     </div>
@@ -176,7 +176,7 @@ export default function SkillsSection() {
                   </div>
                 </div>
 
-                <p className="text-sm text-neutral-600 dark:text-neutral-450 leading-relaxed font-sans">
+                <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed font-sans">
                   {skill.description}
                 </p>
 

@@ -26,7 +26,7 @@ app.use(express.static('public')); // Serve static files
 
 // Download serviceAccountKey.json from Firebase Console
 // Go to: Project Settings > Service Accounts > Generate New Private Key
-const serviceAccount = require('./serviceAccountKey.json');
+const serviceAccount = require('../serviceAccountKey.json');
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),

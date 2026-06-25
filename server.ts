@@ -3,34 +3,56 @@ import path from "path";
 import dotenv from "dotenv";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
-import type { ServiceAccount } from "firebase-admin";
-import { cert, initializeApp } from "firebase-admin/app";
-import { getDatabase } from "firebase-admin/database";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
+const CONTACT_STORE_FILE = path.join(process.cwd(), "contact-messages.json");
+const LOG_STORE_FILE = path.join(process.cwd(), "activity-log.json");
 
 app.use(express.json());
 
-// Load firebase-applet-config.json safely for absolute runtime durability
-const configPath = path.join(process.cwd(), "firebase-applet-configuration.json");
-const firebaseConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+let localContactMessages: Array<Record<string, any>> = [];
+let localLogs: Array<Record<string, any>> = [];
 
-// Load Firebase Admin SDK service account key
-const serviceAccountPath = path.join(process.cwd(), "serviceAccountKey.json");
-const serviceAccount: ServiceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, "utf8"));
+if (fs.existsSync(CONTACT_STORE_FILE)) {
+    try {
+        localContactMessages = JSON.parse(fs.readFileSync(CONTACT_STORE_FILE, "utf8"));
+    } catch (error) {
+        console.warn("Unable to read local contact store; starting fresh.", error);
+    }
+}
 
-// Initialize Firebase Admin SDK with service account credentials
-initializeApp({
-    credential: cert(serviceAccount),
-    databaseURL: process.env.FIREBASE_DATABASE_URL || firebaseConfig.databaseURL || firebaseConfig.databaseUrl,
-});
+if (fs.existsSync(LOG_STORE_FILE)) {
+    try {
+        localLogs = JSON.parse(fs.readFileSync(LOG_STORE_FILE, "utf8"));
+    } catch (error) {
+        console.warn("Unable to read local log store; starting fresh.", error);
+    }
+}
 
-// Use the admin Realtime Database instance
-const db = getDatabase();
+async function persistContact(payload: Record<string, any>) {
+    const entry = {
+        ...payload,
+        timestamp: payload.timestamp || new Date().toISOString(),
+        storedAt: new Date().toISOString(),
+    };
+    localContactMessages.push(entry);
+    fs.writeFileSync(CONTACT_STORE_FILE, JSON.stringify(localContactMessages, null, 2));
+    return { id: `local-${localContactMessages.length}`, storage: "local-file" };
+}
+
+async function persistLog(payload: Record<string, any>) {
+    const entry = {
+        ...payload,
+        timestamp: payload.timestamp || new Date().toISOString(),
+    };
+    localLogs.push(entry);
+    fs.writeFileSync(LOG_STORE_FILE, JSON.stringify(localLogs, null, 2));
+    return { id: `log-${localLogs.length}`, storage: "local-file" };
+}
 
 // Initialize Gemini SDK safely (Lazy client getter)
 function getGeminiClient() {
@@ -67,15 +89,14 @@ app.post("/api/contact", async (req, res) => {
             userAgent: userAgent || "unknown",
         };
 
-        const contactsRef = db.ref("contactMessages");
-        const newRef = contactsRef.push();
-        await newRef.set(payload);
+        const saveResult = await persistContact(payload);
 
         res.json({
             success: true,
             message: "Contact details were stored successfully.",
-            id: newRef.key,
+            id: saveResult.id,
             recipient: "vabi3388@gmail.com",
+            storage: saveResult.storage,
         });
 
     } catch (error: any) {
@@ -98,9 +119,7 @@ app.post("/api/logs", async (req, res) => {
             return res.status(400).json({ error: "Action string is required to save logs" });
         }
 
-        const logsRef = db.ref("logs");
-        const newLogRef = logsRef.push();
-        await newLogRef.set({
+        const saveResult = await persistLog({
             action,
             timestamp: new Date().toISOString(),
             ip: userIp || "unknown",
@@ -110,8 +129,8 @@ app.post("/api/logs", async (req, res) => {
 
         res.json({
             success: true,
-            logId: newLogRef.key,
-            message: "Log entry stored dynamically in the Realtime Database.",
+            logId: saveResult.id,
+            message: "Log entry stored locally for this session.",
         });
 
     } catch (error: any) {
